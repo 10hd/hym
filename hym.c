@@ -10,11 +10,36 @@
 
 // volatile means the value can change unexpectedly. 1 is skip and 0 is play
 volatile int skip = 0;
+volatile float volume = 1.0f;
 
 void *input(void *arg) {
-  int inp;
+  int inp;       // variable for input
+  int typed = 0; // variable for if you type something before hitting enter to
+                 // prevent skipping song when changing volume
   while ((inp = getchar()) != EOF) {
-    skip = 1;
+    if (inp == '+') {
+      // increase volume by 0.1 or 10%
+      volume += 0.1f;
+      if (volume > 3.0f) {
+        volume = 3.0f; // cap volume at 3f or 300%
+      }
+      // print the volume and turn it into an int. also add 0.1f to round up
+      // instead of down
+      printf("Volume: %i\n", (int)(volume * 100 + 0.1f));
+      typed = 1;
+    } else if (inp == '-') {
+      volume -= 0.1f; // decrease by 0.1 or 10%
+      if (volume < 0.0f) {
+        volume = 0.0f; // no negative volume
+      }
+      // same as before
+      printf("Volume: %i\n", (int)(volume * 100 + 0.1f));
+      typed = 1;
+    } else if (inp == '\n' && typed == 0) {
+      skip = 1; // skip if enter is pressed and typed = 0
+    } else {
+      typed = 0; // otherwise set typed to 0 (reset typed basically)
+    }
   }
   return NULL;
 }
@@ -95,6 +120,13 @@ void play(int count, char *name[]) {
       if (samples_read <= 0) {
         break;
       }
+
+      int total_samples = samples_read * mp3.channels;
+
+      for (int i = 0; i < total_samples; i++) {
+        buffer[i] = (short)(buffer[i] * volume);
+      }
+
       // feed the spoon to the speakers or something
       fwrite(buffer, sizeof(short), samples_read * mp3.channels, aud_o);
     }

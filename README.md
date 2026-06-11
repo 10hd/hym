@@ -44,3 +44,8 @@ To skip a song:
 ```
 Press Enter
 ```
+
+To change volume:
+```
+Press '+' or '-' and Enter
+```
