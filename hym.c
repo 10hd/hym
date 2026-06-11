@@ -55,7 +55,7 @@ void play(int count, char *name[], int shuffle) {
     start = 2;
   }
   // test if shuffle int works
-  printf("%i\n", shuffle);
+  // printf("%i\n", shuffle);
 
   if (shuffle == 1) {
     // I HATE ALGORITHMS
