@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -44,24 +45,63 @@ void *input(void *arg) {
   return NULL;
 }
 
-void play(int count, char *name[]) {
+void play(int count, char *name[], int shuffle) {
   srand(time(NULL));
 
-  // fisher-yates shuffle or whatever
-  for (int i = count - 1; i > 1; i--) {
-    int j = 1 + (rand() % i);
+  int start;
+  if (shuffle == 0) {
+    start = 1;
+  } else {
+    start = 2;
+  }
+  // test if shuffle int works
+  printf("%i\n", shuffle);
 
-    // * just points at where the text lives
-    char *temp = name[i];
-    name[i] = name[j];
-    name[j] = temp;
+  if (shuffle == 1) {
+    // I HATE ALGORITHMS
+    // fisher-yates shuffle or whatever
+    for (int i = count - 1; i > start; i--) {
+      int j = start + (rand() % (i - start + 1));
+
+      // * just points at where the text lives
+      char *temp = name[i];
+      name[i] = name[j];
+      name[j] = temp;
+    }
+  } else if (shuffle == 2) {
+    // naive shuffle algorithm
+    for (int i = start; i < count; i++) {
+      int j = start + (rand() % (count - start));
+
+      char *temp = name[i];
+      name[i] = name[j];
+      name[j] = temp;
+    }
+  } else if (shuffle == 3) {
+    // I looked it up and it's very complicated and I will probably not
+    // implement it for a while.
+    printf("I don't understand the gilber-shannon-reeds model.\nNo shuffle.\n");
+  } else if (shuffle == 4) {
+    // fisher yates multiple times
+    int total_rounds = 5 + (rand() % 100);
+    for (int round = 0; round < total_rounds; round++) {
+      for (int i = count - 1; i > start; i--) {
+        int j = start + (rand() % (i - start + 1));
+
+        char *temp = name[i];
+        name[i] = name[j];
+        name[j] = temp;
+      }
+    }
+  } else {
+    printf("No shuffle.\n");
   }
 
   pthread_t thread_id;
   pthread_create(&thread_id, NULL, input, NULL);
   pthread_detach(thread_id);
 
-  for (int i = 1; i < count; i++) {
+  for (int i = start; i < count; i++) {
     drmp3 mp3;
     // &mp3 gives the computer a map coordinate to the mp3 box
     // it means dont make a clone of mp3 instead go to the mp3 and use that
@@ -123,8 +163,8 @@ void play(int count, char *name[]) {
 
       int total_samples = samples_read * mp3.channels;
 
-      for (int i = 0; i < total_samples; i++) {
-        buffer[i] = (short)(buffer[i] * volume);
+      for (int s = 0; s < total_samples; s++) {
+        buffer[s] = (short)(buffer[s] * volume);
       }
 
       // feed the spoon to the speakers or something
@@ -137,13 +177,27 @@ void play(int count, char *name[]) {
 }
 
 int main(int argc, char *argv[]) {
+  int shuffle = 0;
+
   if (argc < 2) {
     printf("Usage:\nhym songName.mp3\n");
 
     return 1;
   }
 
-  play(argc, argv);
+  if (!strcmp(argv[1], "-fy")) {
+    shuffle = 1;
+  } else if (!strcmp(argv[1], "-n")) {
+    shuffle = 2;
+  } else if (!strcmp(argv[1], "-gsr")) {
+    shuffle = 3;
+  } else if (!strcmp(argv[1], "-random")) {
+    shuffle = 4;
+  } else {
+    shuffle = 0;
+  }
+
+  play(argc, argv, shuffle);
 
   printf("Closing...\n");
 
