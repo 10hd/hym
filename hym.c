@@ -1,9 +1,23 @@
+#include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 #define DR_MP3_IMPLEMENTATION
 #include "dr_mp3.h"
+
+// volatile means the value can change unexpectedly. 1 is skip and 0 is play
+volatile int skip = 0;
+
+void *input(void *arg) {
+  int inp;
+  while ((inp = getchar()) != EOF) {
+    skip = 1;
+  }
+  return NULL;
+}
 
 void play(int count, char *name[]) {
   srand(time(NULL));
@@ -18,12 +32,20 @@ void play(int count, char *name[]) {
     name[j] = temp;
   }
 
+  pthread_t thread_id;
+  pthread_create(&thread_id, NULL, input, NULL);
+  pthread_detach(thread_id);
+
   for (int i = 1; i < count; i++) {
     drmp3 mp3;
     // &mp3 gives the computer a map coordinate to the mp3 box
     // it means dont make a clone of mp3 instead go to the mp3 and use that
     if (!drmp3_init_file(&mp3, name[i], NULL)) {
-      printf("Failed to open file!\n");
+      if (errno == 0) {
+        errno = EILSEQ;
+      }
+
+      printf("Failed to open file '%s': %s\n", name[i], strerror(errno));
 
       continue;
     }
@@ -45,9 +67,27 @@ void play(int count, char *name[]) {
     short buffer[2048];
     drmp3_uint64 samples_read;
 
-    printf("Playing: %s\n", name[i]);
+    // reset the skip variable
+    skip = 0;
+
+    // find the last "/" in the name
+    char *filename = strrchr(name[i], '/');
+
+    // if filename isnt empty
+    if (filename != NULL) {
+      filename++; // move 1 chracacter past the "/" to get just the name
+    } else {
+      filename = name[i]; // if no "/" then the path is already just the name
+    }
+
+    printf("Playing: %s\n", filename);
 
     while (1) {
+      if (skip) {
+        printf("Skipped\n\n");
+        break;
+      }
+
       // one spoon
       samples_read =
           drmp3_read_pcm_frames_s16(&mp3, 2048 / mp3.channels, buffer);
@@ -75,5 +115,5 @@ int main(int argc, char *argv[]) {
 
   printf("Closing...\n");
 
-  return 0;
+  _exit(0);
 }

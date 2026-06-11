@@ -10,6 +10,9 @@ The reason I made this is because my laptop struggles to run Spotify and I thoug
 
 I was going to try to implement threading so you can skip songs but I decided not to because I dont know how lol.
 
+Update:
+I decided to try and it wasn't as hard as I expected so now you can skip songs by pressing enter. yay.
+
 ## Installation
 
 Make sure `hym.c` and `dr_mp3.h` are in the same folder, then run
@@ -35,4 +38,9 @@ hym songName1.mp3 songName2.mp3 songName3.mp3
 or
 ```bash
 hym path/to/songs/*.mp3
+```
+
+To skip a song:
+```
+Press Enter
 ```
